@@ -1,25 +1,42 @@
 import arcade
 
-SCREEN_HEIGHT = 1000
-SCREEN_WIDTH = 1000
-SCREEN_TITLE = 'Snake'
+TILE_SCALING = 0.5
 
+class GridGame(arcade.Window):
+    def __init__(self):
+        super().__init__(600, 600, "Пример клеточного поля со спрайтами")
 
-class Snake(arcade.Window):
-    def __init__(self, width, height):
-        super().__init__(width, height, SCREEN_TITLE)
-        self.width = width
-        self.height = height
-        self.game_over = False
+    def setup(self):
+        self.player_list = arcade.SpriteList()
+        self.wall_list = arcade.SpriteList()
+        map_name = "snakemap.tmx"
+        tile_map = arcade.load_tilemap(map_name)
 
-    def update(self):
-        pass
+        self.wall_list = tile_map.sprite_lists["walls"]
+        self.collision_list = tile_map.sprite_lists["collision"]
+        #пока так
+        self.player_sprite = arcade.Sprite(
+            ":resources:images/animated_characters/female_person/femalePerson_idle.png",
+            0.5)
+        self.player_sprite.center_x = 128  # Примерные координаты
+        self.player_sprite.center_y = 256  # Примерные координаты
+        self.player_list.append(self.player_sprite)
+
+        self.physics_engine = arcade.PhysicsEngineSimple(
+            self.player_sprite, self.collision_list
+        )
 
     def on_draw(self):
-        pass
+        self.clear()
+        self.wall_list.draw()
+        self.player_list.draw()
 
 
-def setup_game(width=1000, height=600):
-    game = Snake(width, height)
+def main():
+    game = GridGame()
     game.setup()
-    return game
+    arcade.run()
+
+
+if __name__ == "__main__":
+    main()
