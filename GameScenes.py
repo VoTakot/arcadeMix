@@ -2,7 +2,7 @@ import random
 
 import arcade
 from pyglet.graphics import Batch
-from arcade.gui import UIManager, UIAnchorLayout, UIBoxLayout, UILabel, UIMessageBox
+from arcade.gui import UIManager, UIAnchorLayout, UIBoxLayout, UILabel, UITextureButton, UIMessageBox
 from birdGameObjects import Bird, Earth, Colon, Finish
 
 
@@ -32,7 +32,7 @@ class PauseView(arcade.View):
                               font_size=30,
                               text_color=arcade.color.BLACK,
                               )
-        continue_label = UILabel(text='Чnобы продолжить, нажмите ESC',
+        continue_label = UILabel(text='Чтобы продолжить, нажмите ESC',
                                  width=800,
                                  height=100,
                                  font_size=30,
@@ -51,23 +51,18 @@ class PauseView(arcade.View):
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
             self.window.show_view(self.game_view)
+            return True
 
 
 class GameView(arcade.View):
-    def __init__(self):
+    def __init__(self, hardness):
         super().__init__()
 
+        self.hardness = hardness
         self.result = 0
         self.jump_pressed = False
         self.finish_spawned = False
 
-        self.manager = UIManager()
-        self.manager.enable()
-
-        self.anchor_layout = UIAnchorLayout()
-        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
-
-        self.setup_widgets()
         self.bird_list = arcade.SpriteList()
         self.earth_list = arcade.SpriteList()
         self.colons_list = arcade.SpriteList()
@@ -89,11 +84,39 @@ class GameView(arcade.View):
             gravity_constant=0.45
         )
 
+        self.manager = UIManager()
+        self.manager.enable()
+
+        self.anchor_layout = UIAnchorLayout()
+        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
+        self.anchor_layout.center_y = self.height // 2 - 50
+        self.anchor_layout.center_x = self.width // 2 - 950
+
+        self.setup_widgets()
+
+        self.anchor_layout.add(self.box_layout)
+        self.manager.add(self.anchor_layout)
+
     def setup_widgets(self):
-        pass
+        self.label = UILabel(text=f'Счёт: {self.result}',
+                             font_size=20,
+                             text_color=arcade.color.BLACK,
+                             width=400,
+                             align='center'
+                             )
+        self.box_layout.add(self.label)
 
     def on_update(self, delta_time):
-        self.colons_list.update(delta_time)
+        bird_collisions_with_colons = arcade.check_for_collision_with_list(self.bird, self.colons_list)
+        bird_collisions_with_earth = arcade.check_for_collision_with_list(self.bird, self.earth_list)
+        if bird_collisions_with_earth or bird_collisions_with_colons:
+            self.game_over()
+            return True
+
+        for colon in self.colons_list:
+            if colon.center_x <= 25:
+                self.result += 0.5
+                colon.remove_from_sprite_lists()
         if (not self.colons_list or self.last_colon.center_x <= 750) and not self.finish_spawned:
             up_colon = Colon('up')
             bottom_colon = Colon('bottom')
@@ -104,36 +127,34 @@ class GameView(arcade.View):
             self.last_colon = up_colon
             self.colons_list.append(up_colon)
             self.colons_list.append(bottom_colon)
-        if self.finish_spawned:
+
+        if self.jump_pressed:
+            self.engine.jump(6)
+
+        if self.finish_list:
+            bird_finished = arcade.check_for_collision_with_list(self.bird, self.finish_list)
+            if bird_finished:
+                self.win()
+                return True
+        if self.finish_spawned and not self.finish_list:
             finish = Finish()
             finish.center_x = 920
             finish.center_y = 300
             self.finish_list.append(finish)
         if self.finish_spawned and not self.colons_list:
-            self.bird.update(delta_time)
-        if self.jump_pressed:
-            self.engine.jump(6)
-        if self.finish_list:
-            bird_finished = arcade.check_for_collision_with_list(self.bird, self.finish_list)
-            if bird_finished:
-                win_view = WinView()
-                self.window.show_view(win_view)
-        self.engine.update()
-        if self.colons_list:
-            bird_collisions = arcade.check_for_collision_with_list(self.bird, self.colons_list) or\
-                              arcade.check_for_collision_with_list(self.bird, self.earth_list)
-            if bird_collisions:
-                game_over_view = GameOverView()
-                self.window.show_view(game_over_view)
-            for colon in self.colons_list:
-                if colon.center_x <= 25:
-                    colon.remove_from_sprite_lists()
-                    self.result += 0.5
-        result = int(self.result)
-        if result == 1:
-            self.finish_spawned = True
-        print(result)
+            self.bird.move = True
+        self.colons_list.update()
+        self.bird_list.update(delta_time)
 
+        self.engine.update()
+        result = int(self.result)
+        self.label.text = f'Счёт: {result}'
+        if result == 16 and self.hardness == 'easy':
+            self.finish_spawned = True
+        elif result == 46 and self.hardness == 'medium':
+            self.finish_spawned = True
+        elif result == 146 and self.hardness == 'easy':
+            self.finish_spawned = True
 
     def on_draw(self):
         self.clear()
@@ -142,6 +163,7 @@ class GameView(arcade.View):
         self.finish_list.draw()
         self.bird_list.draw()
         self.earth_list.draw()
+        self.manager.draw()
 
     def on_key_press(self, key, modifier):
         if key == arcade.key.ESCAPE:
@@ -154,48 +176,297 @@ class GameView(arcade.View):
         if key == arcade.key.SPACE:
             self.jump_pressed = False
 
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            pass
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            pass
+
+    def game_over(self):
+        game_over_view = GameOverView(self.hardness)
+        self.window.show_view(game_over_view)
+
+    def win(self):
+        win = WinView(self.hardness)
+        self.window.show_view(win)
+
 
 class MenuView(arcade.View):
     def __init__(self):
         super().__init__()
-        self.background_color = arcade.color.BLUE_GRAY  # Фон для меню
+        self.background_color = arcade.color.BLUE_GRAY
 
-        self.batch = Batch()
-        self.main_text = arcade.Text("Главное Меню", self.window.width / 2, self.window.height / 2 + 50,
-                                     arcade.color.WHITE, font_size=40, anchor_x="center", batch=self.batch)
-        self.space_text = arcade.Text("Нажми ESC, чтобы начать!", self.window.width / 2, self.window.height / 2 - 50,
-                                      arcade.color.WHITE, font_size=20, anchor_x="center", batch=self.batch)
+        self.manager = UIManager()
+        self.manager.enable()
+
+        self.anchor_layout = UIAnchorLayout()
+        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
+        self.buttons_layout = UIBoxLayout(vertical=True, space_between=10)
+        self.anchor_layout.center_y += self.height // 4
+
+        self.setup_widgets()
+
+        self.anchor_layout.add(self.box_layout)
+        self.box_layout.add(self.buttons_layout)
+        self.manager.add(self.anchor_layout)
+
+    def setup_widgets(self):
+        label = UILabel(text='Выберите Уровень сложности',
+                               font_size=20,
+                               text_color=arcade.color.BLACK,
+                               width=400,
+                               align='center')
+        easy_button = UITextureButton(text='Лёгкий',
+                                         width=150,
+                                         height=50,
+                                         texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                         )
+        easy_button.on_click = self.easy
+        medium_button = UITextureButton(text='Средний',
+                                      width=150,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                      )
+        medium_button.on_click = self.medium
+        hard_button = UITextureButton(text='Сложный',
+                                      width=150,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
+        hard_button.on_click = self.hard
+        infinity_button = UITextureButton(text='Бесконечный',
+                                      width=150,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
+        infinity_button.on_click = self.infinity
+        self.box_layout.add(label)
+        self.buttons_layout.add(easy_button)
+        self.buttons_layout.add(medium_button)
+        self.buttons_layout.add(hard_button)
+        self.buttons_layout.add(infinity_button)
 
     def on_draw(self):
         self.clear()
-        self.batch.draw()
+        self.manager.draw()
 
-    def on_key_press(self, key, modifiers):
-        if key == arcade.key.ESCAPE:
-            game_view = GameView()
-            self.window.show_view(game_view)
+    def easy(self, event):
+        game = GameView('easy')
+        self.window.show_view(game)
+
+    def medium(self, event):
+        game = GameView('medium')
+        self.window.show_view(game)
+
+    def hard(self, event):
+        game = GameView('hard')
+        self.window.show_view(game)
+
+    def infinity(self, event):
+        game = GameView('infinity')
+        self.window.show_view(game)
+
+    def on_hide_view(self):
+        self.manager.disable()
 
 
 class WinView(arcade.View):
-    def __init__(self):
+    def __init__(self, hardness):
         super().__init__()
+        self.background_color = arcade.color.LIGHT_BLUE
+
+        self.hardness = hardness
+
+        self.bird_list = arcade.SpriteList()
+        bird = Bird(win=True)
+        bird.center_x = self.width // 2
+        bird.center_y = 3 * self.height // 4
+        self.bird_list.append(bird)
+
+        self.manager = UIManager()
+        self.manager.enable()
+
+        self.anchor_layout = UIAnchorLayout()
+        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
+        self.buttons_layout = UIBoxLayout(vertical=False, space_between=10)
+
+        self.setup_widgets()
+
+        self.anchor_layout.add(self.box_layout)
+        self.box_layout.add(self.buttons_layout)
+        self.manager.add(self.anchor_layout)
+
+    def setup_widgets(self):
+        label = UILabel(text='Победа!',
+                        font_size=20,
+                        text_color=arcade.color.BLACK,
+                        width=400,
+                        align='center')
+        second_label = UILabel(text='Нажмите на кнопки ниже, или клавиши, соответсвующие этим кнопкам',
+                               font_size=20,
+                               text_color=arcade.color.BLACK,
+                               width=400,
+                               align='center')
+        restart_button = UITextureButton(text='Начать Заново (R)',
+                                         width=150,
+                                         height=50,
+                                         texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                         )
+        restart_button.on_click = self.restart
+        menu_button = UITextureButton(text='Меню (Enter)',
+                                      width=100,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                      )
+        menu_button.on_click = self.menu
+        exit_button = UITextureButton(text='Выйти (ESC)',
+                                      width=100,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
+        exit_button.on_click = self.exit
+        self.box_layout.add(label)
+        self.box_layout.add(second_label)
+        self.buttons_layout.add(restart_button)
+        self.buttons_layout.add(menu_button)
+        self.buttons_layout.add(exit_button)
+
+    def on_draw(self):
+        self.clear()
+        self.bird_list.draw()
+        self.manager.draw()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.R:
-            menu_view = MenuView()
-            self.window.show_view(menu_view)
+            self.restart('Key')
+        elif key == arcade.key.ENTER:
+            self.menu('Key')
         elif key == arcade.key.ESCAPE:
+            self.exit('Key')
+
+    def restart(self, event):
+        game_view = GameView(self.hardness)
+        self.window.show_view(game_view)
+
+    def menu(self, event):
+        menu = MenuView()
+        self.window.show_view(menu)
+
+    def exit(self, event):
+        message_box = UIMessageBox(message_text='Вы действительно хотите выйти?',
+                                   width=400,
+                                   height=200,
+                                   buttons=('Да', 'Нет'))
+        message_box.on_action = self.on_message_box
+        self.manager.add(message_box)
+
+    def on_message_box(self, button_text):
+        if button_text.action == 'Да':
             arcade.Window.close(self.window)
+        else:
+            game_over = WinView(self.hardness)
+            self.window.show_view(game_over)
+
+    def on_hide_view(self):
+        self.manager.disable()
 
 
 class GameOverView(arcade.View):
-    def __init__(self):
+    def __init__(self, hardness):
         super().__init__()
+        self.background_color = arcade.color.LIGHT_BLUE
+
+        self.hardness = hardness
+
+        self.manager = UIManager()
+        self.manager.enable()
+
+        self.anchor_layout = UIAnchorLayout()
+        self.box_layout = UIBoxLayout(vertical=True, space_between=10)
+        self.buttons_layout = UIBoxLayout(vertical=False, space_between=10)
+
+        self.setup_widgets()
+
+        self.anchor_layout.add(self.box_layout)
+        self.box_layout.add(self.buttons_layout)
+        self.manager.add(self.anchor_layout)
+
+        self.bird_list = arcade.SpriteList()
+        bird = Bird(lose=True)
+        bird.center_x = self.width // 2
+        bird.center_y = 3 * self.height // 4
+        self.bird_list.append(bird)
+
+    def setup_widgets(self):
+        label = UILabel(text='Поражение!',
+                        font_size=20,
+                        text_color=arcade.color.BLACK,
+                        width=400,
+                        align='center')
+        self.box_layout.add(label)
+        second_label = UILabel(text='Нажмите на кнопки ниже, или клавиши, соответсвующие этим кнопкам',
+                               font_size=20,
+                               text_color=arcade.color.BLACK,
+                               width=400,
+                               align='center')
+        restart_button = UITextureButton(text='Начать Заново (R)',
+                                         width=150,
+                                         height=50,
+                                         texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                         )
+        restart_button.on_click = self.restart
+        menu_button = UITextureButton(text='Меню (Enter)',
+                                      width=100,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                      )
+        menu_button.on_click = self.menu
+        exit_button = UITextureButton(text='Выйти (ESC)',
+                                      width=100,
+                                      height=50,
+                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
+        exit_button.on_click = self.exit
+        self.box_layout.add(label)
+        self.box_layout.add(second_label)
+        self.buttons_layout.add(restart_button)
+        self.buttons_layout.add(menu_button)
+        self.buttons_layout.add(exit_button)
+
+    def on_draw(self):
+        self.clear()
+        self.bird_list.draw()
+        self.manager.draw()
+
+    def on_update(self, delta_time):
         pass
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.R:
-            menu_view = MenuView()
-            self.window.show_view(menu_view)
+            self.restart('Key')
+        elif key == arcade.key.ENTER:
+            self.menu('Key')
         elif key == arcade.key.ESCAPE:
+            self.exit('Key')
+
+    def restart(self, event):
+        game_view = GameView(self.hardness)
+        self.window.show_view(game_view)
+
+    def menu(self, event):
+        menu = MenuView()
+        self.window.show_view(menu)
+
+    def exit(self, event):
+        message_box = UIMessageBox(message_text='Вы действительно хотите выйти?',
+                                   width=400,
+                                   height=200,
+                                   buttons=('Да', 'Нет'))
+        message_box.on_action = self.on_message_box
+        self.manager.add(message_box)
+
+    def on_message_box(self, button_text):
+        if button_text.action == 'Да':
             arcade.Window.close(self.window)
+        else:
+            game_over = GameOverView(self.hardness)
+            self.window.show_view(game_over)
+
+    def on_hide_view(self):
+        self.manager.disable()
