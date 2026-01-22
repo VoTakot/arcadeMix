@@ -87,12 +87,6 @@ class GameView(arcade.View):
                         text_color=arcade.color.BLACK,
                         width=400)
         self.anchor_layout.add(label)
-        music_volume = UITextureButton(text='Громкость + 1',
-                                       width=150,
-                                       height=50,
-                                       texture=arcade.make_soft_square_texture(100, arcade.color.LIGHT_BLUE, 255, 255))
-        music_volume.on_click = self.loudly
-        self.anchor_layout.add(music_volume)
 
     def on_draw(self):
         self.clear()
