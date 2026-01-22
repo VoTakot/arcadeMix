@@ -15,7 +15,6 @@ class Card(arcade.Sprite):
         from CARDS
         where id = ?
         """, (card,)).fetchall()
-        print(card_data[0])
 
         self.texture = arcade.load_texture(str(card_data[0][0]))
         if int(card_data[0][1]) != 11:
