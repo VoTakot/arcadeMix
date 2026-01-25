@@ -231,9 +231,7 @@ class SnakeGame(arcade.Window):
         arcade.unschedule(self.update)
         super().on_close()
 
+
 def main():
     game = SnakeGame()
     arcade.run()
-
-if __name__ == "__main__":
-    main()
