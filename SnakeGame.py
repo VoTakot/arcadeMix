@@ -25,7 +25,7 @@ class SnakeGame(arcade.Window):
         self.eat_sound = arcade.load_sound("sounds/eat.mp3")
         self.pause_sound = arcade.load_sound("sounds/pause.mp3")
         self.lose_sound = arcade.load_sound("sounds/lose.mp3")
-
+#
         self.snake = []
         self.snake_direction = (1, 0)
         self.snake_speed = MOVEMENT_SPEED
