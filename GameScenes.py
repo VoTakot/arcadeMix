@@ -3,7 +3,7 @@ import random
 import arcade
 from pyglet.graphics import Batch
 from arcade.gui import UIManager, UIAnchorLayout, UIBoxLayout, UILabel, UITextureButton, UIMessageBox
-from birdGameObjects import Bird, Earth, Colon, Finish
+from birdGameObjects import Bird, Earth, Colon, Finish, Cloud
 
 
 class PauseView(arcade.View):
@@ -67,10 +67,13 @@ class GameView(arcade.View):
         self.earth_list = arcade.SpriteList()
         self.colons_list = arcade.SpriteList()
         self.finish_list = arcade.SpriteList()
+        self.clouds_list = arcade.SpriteList()
+
         self.bird = Bird()
         self.bird.center_x = 100
         self.bird.center_y = self.height // 2
         self.bird_list.append(self.bird)
+
         for i in range(int(self.width) // 100 + 1):
             earth = Earth()
             earth.center_x = 100 * i
@@ -107,9 +110,13 @@ class GameView(arcade.View):
         self.box_layout.add(self.label)
 
     def on_update(self, delta_time):
+        if len(self.clouds_list) < 6:
+            cloud = Cloud()
+            self.clouds_list.append(cloud)
+        self.clouds_list.update(delta_time)
         bird_collisions_with_colons = arcade.check_for_collision_with_list(self.bird, self.colons_list)
         bird_collisions_with_earth = arcade.check_for_collision_with_list(self.bird, self.earth_list)
-        if bird_collisions_with_earth or bird_collisions_with_colons:
+        if bird_collisions_with_earth or bird_collisions_with_colons or self.bird.center_y >= self.height:
             self.game_over()
             return True
 
@@ -133,14 +140,14 @@ class GameView(arcade.View):
 
         if self.finish_list:
             bird_finished = arcade.check_for_collision_with_list(self.bird, self.finish_list)
-            if bird_finished:
+            if bird_finished or self.bird.center_x >= self.finish.center_x:
                 self.win()
                 return True
         if self.finish_spawned and not self.finish_list:
-            finish = Finish()
-            finish.center_x = 920
-            finish.center_y = 300
-            self.finish_list.append(finish)
+            self.finish = Finish()
+            self.finish.center_x = 920
+            self.finish.center_y = 300
+            self.finish_list.append(self.finish)
         if self.finish_spawned and not self.colons_list:
             self.bird.move = True
         self.colons_list.update()
@@ -159,6 +166,7 @@ class GameView(arcade.View):
     def on_draw(self):
         self.clear()
         self.background_color = arcade.color.LIGHT_BLUE
+        self.clouds_list.draw()
         self.colons_list.draw()
         self.finish_list.draw()
         self.bird_list.draw()
@@ -178,9 +186,15 @@ class GameView(arcade.View):
 
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
-            pass
+            self.jump_pressed = True
         elif button == arcade.MOUSE_BUTTON_RIGHT:
-            pass
+            self.jump_pressed = True
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            self.jump_pressed = False
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            self.jump_pressed = False
 
     def game_over(self):
         game_over_view = GameOverView(self.hardness)
