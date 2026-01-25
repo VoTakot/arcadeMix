@@ -22,6 +22,10 @@ class SnakeGame(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
 
+        self.eat_sound = arcade.load_sound("sounds/eat.mp3")
+        self.pause_sound = arcade.load_sound("sounds/pause.mp3")
+        self.lose_sound = arcade.load_sound("sounds/lose.mp3")
+
         self.snake = []
         self.snake_direction = (1, 0)
         self.snake_speed = MOVEMENT_SPEED
@@ -89,7 +93,7 @@ class SnakeGame(arcade.Window):
         self.snake_speed = MOVEMENT_SPEED
 
         self.create_food()
-        self.create_obstacles(count=15)
+        self.create_obstacles(count=20)
 
     def create_food(self):
         while True:
@@ -183,14 +187,17 @@ class SnakeGame(arcade.Window):
         if (new_head[0] < 0 or new_head[0] >= GRID_WIDTH or
                 new_head[1] < 0 or new_head[1] >= GRID_HEIGHT):
             self.game_over = True
+            arcade.play_sound(self.lose_sound)
             return
 
         if new_head in self.snake:
             self.game_over = True
+            arcade.play_sound(self.lose_sound)
             return
 
         if new_head in self.obstacles:
             self.game_over = True
+            arcade.play_sound(self.lose_sound)
             return
 
         self.snake.insert(0, new_head)
@@ -198,6 +205,7 @@ class SnakeGame(arcade.Window):
         if new_head == self.food:
             self.score += 10
             self.score_text.text = f"Счет: {self.score}"
+            arcade.play_sound(self.eat_sound)
             self.create_food()
 
             if self.score % 50 == 0:
@@ -214,6 +222,7 @@ class SnakeGame(arcade.Window):
         if key == arcade.key.ESCAPE:
             if not self.game_over:
                 self.paused = not self.paused
+                arcade.play_sound(self.pause_sound)
             return
         if self.game_over:
             return
