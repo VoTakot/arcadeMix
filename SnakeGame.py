@@ -142,7 +142,7 @@ class SnakeGame(arcade.Window):
             self.score_box_y + self.score_box_height,
             SCORE_BOX_COLOR
         )
-
+#
         self.score_text.x = self.score_box_x + 10
         self.score_text.y = self.score_box_y + 10
         self.score_text.draw()
