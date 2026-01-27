@@ -171,3 +171,7 @@ class GemThreeGame(arcade.Window):
 def main():
     game = GemThreeGame()
     arcade.run()
+
+
+if __name__ == '__main__':
+    main()

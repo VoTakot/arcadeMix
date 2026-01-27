@@ -871,7 +871,7 @@ class GameOver(arcade.View):
         menu_btn.on_click = self.menu
         self.buttons_layout.add(menu_btn)
 
-        exit_btn = UITextureButton(text='Вернуться в меню',
+        exit_btn = UITextureButton(text='Выйти',
                                    width=200,
                                    height=80,
                                    texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))

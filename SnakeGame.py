@@ -244,3 +244,7 @@ class SnakeGame(arcade.Window):
 def main():
     game = SnakeGame()
     arcade.run()
+
+
+if __name__ == '__main__':
+    main()

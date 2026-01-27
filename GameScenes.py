@@ -226,21 +226,21 @@ class MenuView(arcade.View):
 
     def setup_widgets(self):
         label = UILabel(text='Выберите Уровень сложности',
-                               font_size=20,
-                               text_color=arcade.color.BLACK,
-                               width=400,
-                               align='center')
+                        font_size=20,
+                        text_color=arcade.color.BLACK,
+                        width=400,
+                        align='center')
         easy_button = UITextureButton(text='Лёгкий',
-                                         width=150,
-                                         height=50,
-                                         texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
-                                         )
-        easy_button.on_click = self.easy
-        medium_button = UITextureButton(text='Средний',
                                       width=150,
                                       height=50,
                                       texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
                                       )
+        easy_button.on_click = self.easy
+        medium_button = UITextureButton(text='Средний',
+                                        width=150,
+                                        height=50,
+                                        texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255)
+                                        )
         medium_button.on_click = self.medium
         hard_button = UITextureButton(text='Сложный',
                                       width=150,
@@ -248,9 +248,9 @@ class MenuView(arcade.View):
                                       texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
         hard_button.on_click = self.hard
         infinity_button = UITextureButton(text='Бесконечный',
-                                      width=150,
-                                      height=50,
-                                      texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
+                                          width=150,
+                                          height=50,
+                                          texture=arcade.make_soft_square_texture(100, arcade.color.BLACK, 255, 255))
         infinity_button.on_click = self.infinity
         self.box_layout.add(label)
         self.buttons_layout.add(easy_button)
@@ -280,6 +280,9 @@ class MenuView(arcade.View):
 
     def on_hide_view(self):
         self.manager.disable()
+
+    def on_show_view(self):
+        self.manager.enable()
 
 
 class WinView(arcade.View):
@@ -380,6 +383,9 @@ class WinView(arcade.View):
 
     def on_hide_view(self):
         self.manager.disable()
+
+    def on_show_view(self):
+        self.manager.enable()
 
 
 class GameOverView(arcade.View):
