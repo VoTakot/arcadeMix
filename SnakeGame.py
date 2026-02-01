@@ -1,7 +1,6 @@
 import arcade
 import random
 
-
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Змейка на Arcade"
@@ -18,6 +17,7 @@ FOOD_COLOR = arcade.color.RED
 TEXT_COLOR = arcade.color.WHITE
 SCORE_BOX_COLOR = arcade.color.BLACK
 
+
 class SnakeGame(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
@@ -25,7 +25,7 @@ class SnakeGame(arcade.Window):
         self.eat_sound = arcade.load_sound("sounds/eat.mp3")
         self.pause_sound = arcade.load_sound("sounds/pause.mp3")
         self.lose_sound = arcade.load_sound("sounds/lose.mp3")
-#
+        #
         self.snake = []
         self.snake_direction = (1, 0)
         self.snake_speed = MOVEMENT_SPEED
@@ -146,7 +146,7 @@ class SnakeGame(arcade.Window):
             self.score_box_y + self.score_box_height,
             SCORE_BOX_COLOR
         )
-#
+        #
         self.score_text.x = self.score_box_x + 10
         self.score_text.y = self.score_box_y + 10
         self.score_text.draw()
